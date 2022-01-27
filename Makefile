@@ -42,7 +42,7 @@ ifeq ($(shell go help mod >/dev/null 2>&1 && echo true), true)
 endif
 
 ifeq ($(DEBUG), 1)
-  override GOGCFLAGS += -N -l
+  override GOGCFLAGS += -N -l -dwarf
 endif
 
 ifeq ($(GOOS), linux)
@@ -96,7 +96,7 @@ SKOPEO_LDFLAGS := -ldflags '-X main.gitCommit=${GIT_COMMIT} $(EXTRA_LDFLAGS)'
 MANPAGES_MD = $(wildcard docs/*.md)
 MANPAGES ?= $(MANPAGES_MD:%.md=%)
 
-BTRFS_BUILD_TAG = $(shell hack/btrfs_tag.sh) $(shell hack/btrfs_installed_tag.sh)
+BTRFS_BUILD_TAG = $(shell hack/btrfs_tag.sh) $(shell hack/btrfs_installed_tag.sh)ll
 LIBDM_BUILD_TAG = $(shell hack/libdm_tag.sh)
 LIBSUBID_BUILD_TAG = $(shell hack/libsubid_tag.sh)
 LOCAL_BUILD_TAGS = $(BTRFS_BUILD_TAG) $(LIBDM_BUILD_TAG) $(LIBSUBID_BUILD_TAG)
@@ -111,6 +111,7 @@ endif
 #           and inlining. Using these build options allows you to subsequently
 #           use source debugging tools like delve.
 all: bin/skopeo docs
+	@echo building now bin/skopeo
 
 codespell:
 	codespell -S Makefile,build,buildah,buildah.spec,imgtype,copy,AUTHORS,bin,vendor,.git,go.sum,CHANGELOG.md,changelog.txt,seccomp.json,.cirrus.yml,"*.xz,*.gz,*.tar,*.tgz,*ico,*.png,*.1,*.5,*.orig,*.rej" -L fpr,uint,iff,od,ERRO -w
@@ -137,6 +138,9 @@ binary: cmd/skopeo
 # Build w/o using containers
 .PHONY: bin/skopeo
 bin/skopeo:
+	@echo gpgme: $(GPGME_ENV), go: ${GO}, mod_vendor: ${MOD_VENDOR}
+	@echo
+	@echo
 	$(GPGME_ENV) $(GO) build $(MOD_VENDOR) ${GO_DYN_FLAGS} ${SKOPEO_LDFLAGS} -gcflags "$(GOGCFLAGS)" -tags "$(BUILDTAGS)" -o $@ ./cmd/skopeo
 bin/skopeo.%:
 	GOOS=$(word 2,$(subst ., ,$@)) GOARCH=$(word 3,$(subst ., ,$@)) $(GO) build $(MOD_VENDOR) ${SKOPEO_LDFLAGS} -tags "containers_image_openpgp $(BUILDTAGS)" -o $@ ./cmd/skopeo
